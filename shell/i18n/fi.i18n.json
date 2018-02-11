@@ -4,8 +4,8 @@
     "layout": {
       "demoExpired": {
         "title": "Demo vanhentunut",
-        "canUpgrade": "Kiitos kun kokelit Sandstorm Demoa! Demo tilisi on vanhentunut. Jos haluat jatkaa Sandstormin käyttämästä ja pitää tietosi tallessa, ole hyvä ja kirjaudu sisään.",
-        "cannotUpgrade": "Kiitos kun kokelit Sandstorm Demoa! Demo tilisi on vanhentunut.",
+        "canUpgrade": "Kiitos kun kokelit NordSuitea! Demo tilisi on vanhentunut. Jos haluat jatkaa palvelun käyttämästä ja pitää tietosi tallessa, ole hyvä ja ota yhteyttä asiakaspalveluumme.",
+        "cannotUpgrade": "Kiitos kun kokelit NordSuitea! Demo tilisi on vanhentunut. Jos haluat jatkaa palvelun käyttämästä ja pitää tietosi tallessa, ole hyvä ja ota yhteyttä asiakaspalveluumme.",
         "signOut": "Kirjaudu ulos"
       },
       "adminAlert": {
@@ -13,15 +13,15 @@
         "title": "Viesti adminilta"
       },
       "demoModal": {
-        "header": "Sandstorm on web-tuottavuusohjelmisto jonka voi asentaa omalle palvelimelle.",
-        "withAppDemo": "ohjelmien kuten %s kanssa.",
-        "withoutAppDemo": "kaikki tarvitsemasi ohjelmat samassa paikassa.",
+        "header": "NordSuite on yrityksille, erityisesti pienyrittäjille, suunnattu tuottavuusohjelmisto.",
+        "withAppDemo": "Saatavilla on useita sovelluksia, kuten %s.",
+        "withoutAppDemo": "Löydät kaikki tarvitsemasi ohjelmat samasta paikasta.",
         "startButton": {
-          "withAppDemo": "Kokeile %s »",
+          "withAppDemo": "Kokeile %s -sovellusta»",
           "withoutAppDemo": "Käynnistä »"
         },
-        "explanation": "<p>Sandstorm tekee helpoksi ajaa ohjelmia omalla palvelimellasi. Sen lisäksi että tämä lisää tietosuojaa ja hallintaa, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\" target=\"_blank\">tämä tuo Avoimen Lähdekoodin ohjelmat laajemmalle yleisölle.</a></p>",
-        "securityOverview": "<p>Sandstorm on myös älyttömän turvallinen. Jos tietoturva kiinnostaa sinua, katso <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">Sandstorm tietoturvamallin yleiskatsaus</a>.</p>"
+        "explanation": "<p>Olet käynnistämässä NordSuiten demoa. Saat käyttöösi palvelun yhden tunnin ajaksi. Jos kiinnostut palvelusta ja haluat ottaa sen pidemmäksi ajaksi kokeiluun, ole yhteydessä NordSuiten asiakaspalveluun.</a></p>",
+        "securityOverview": "<p>NordSuite perustuu avoimen lähdekoodin ohjelmistoon <a href=\"https://sandstorm.io\">Sandstorm</a>. Jos tietoturva kiinnostaa sinua, katso <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">Sandstormin tietoturvamallin yleiskatsaus</a>.</p>"
       }
     },
     "notifications": {
@@ -406,7 +406,7 @@
       }
     },
     "identityChangesNotificationItem": {
-      "explanation": "Olemme vaihtamassa tapaa miten identiteetit toimivat Sandstormissa. Tämä voi vaikuttaa tiliisi. Klikkaa tästä saadaksesi lisätietoja."
+      "explanation": "Olemme vaihtamassa tapaa miten identiteetit toimivat Nordsuitessa. Tämä voi vaikuttaa tiliisi. Klikkaa tästä saadaksesi lisätietoja."
     },
     "grainActivityNotificationItem": {
       "title": "<strong>__sender__</strong> jyvältä <strong>__grain__</strong>:",
@@ -1766,10 +1766,11 @@
       "updated": "Sandstorm on päivitetty — Klikkaa tästä ladataksesi sivun uudelleen",
       "apps": "Ohjelmat",
       "grains": "Jyvät",
-      "oasis": "Aloita yhteistyö muiden kanssa Sandstormia paikassa Oasis:",
-      "createAccount": "Luo ilmainen tili »",
-      "demoHint": "Demo tilisi tiedot siirretään.",
-      "selfHostHint": "Tai, asenna Sandstorm tiimillesi (se on avointa lähdekoodia):",
+      "oasis": "Ota ohjelmisto käyttöösi yrityksellesi:",
+      "createAccount": "Ota kokeiluun (3kk) »",
+      "demoHint": "Saat Peruspalvelun käyttöön yrityksellesi 3 kuukaudeksi täysin ilmaiseksi. Koskee ensimmäistä 50 yritysasiakasta.",
+      "selfHostHint": "Onko sinulla kysymyksiä?",
+      "contactSupport": "Live Chat »"
       "signUp": "Kirjaudu käyttämällä:",
       "close": "Sulje"
     },
