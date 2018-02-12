@@ -29,9 +29,9 @@ Meteor.users.remove({});
 // does not automatically get cleared on hot code reload.
 
 globalDb.collections.settings.upsert({ _id: "appMarketUrl" },
-                                     { $set: { value: "https://apps.sandstorm.io" } });
+                                     { $set: { value: "https://nordsuite.fi/appstore" } });
 globalDb.collections.settings.upsert({ _id: "appIndexUrl" },
-                                     { $set: { value: "https://app-index.sandstorm.io" } });
+                                     { $set: { value: "https://appstore-api.nordsuite.fi" } });
 globalDb.collections.settings.upsert({ _id: "appUpdatesEnabled" },
                                      { $set: { value: true } });
 

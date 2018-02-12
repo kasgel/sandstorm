@@ -1770,6 +1770,7 @@
       "createAccount": "Create free account »",
       "demoHint": "Your demo data will be transferred.",
       "selfHostHint": "Or, install Sandstorm for your team (it's open source):",
+      "contactSupport":"Live Chat",
       "signUp": "Sign up within:",
       "close": "Close"
     },

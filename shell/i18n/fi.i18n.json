@@ -4,8 +4,8 @@
     "layout": {
       "demoExpired": {
         "title": "Demo vanhentunut",
-        "canUpgrade": "Kiitos kun kokelit NordSuitea! Demo tilisi on vanhentunut. Jos haluat jatkaa palvelun käyttämästä ja pitää tietosi tallessa, ole hyvä ja ota yhteyttä asiakaspalveluumme.",
-        "cannotUpgrade": "Kiitos kun kokelit NordSuitea! Demo tilisi on vanhentunut. Jos haluat jatkaa palvelun käyttämästä ja pitää tietosi tallessa, ole hyvä ja ota yhteyttä asiakaspalveluumme.",
+        "canUpgrade": "Kiitos kun kokeilit NordSuitea! Demo-tilisi on vanhentunut. Jos haluat jatkaa palvelun käyttämistä ja pitää tietosi tallessa, ole hyvä ja ota yhteyttä asiakaspalveluumme.",
+        "cannotUpgrade": "Kiitos kun kokelit NordSuitea! Demo-tilisi on vanhentunut. Jos haluat jatkaa palvelun käyttämistä ja pitää tietosi tallessa, ole hyvä ja ota yhteyttä asiakaspalveluumme.",
         "signOut": "Kirjaudu ulos"
       },
       "adminAlert": {
@@ -13,14 +13,14 @@
         "title": "Viesti adminilta"
       },
       "demoModal": {
-        "header": "NordSuite on yrityksille, erityisesti pienyrittäjille, suunnattu tuottavuusohjelmisto.",
+        "header": "NordSuite on pienille ja keskisuurille yrityksille suunnattu tuottavuusohjelmisto.",
         "withAppDemo": "Saatavilla on useita sovelluksia, kuten %s.",
-        "withoutAppDemo": "Löydät kaikki tarvitsemasi ohjelmat samasta paikasta.",
+        "withoutAppDemo": "Saat kaikki tarvitsemasi työkalut yhdestä paikasta.",
         "startButton": {
-          "withAppDemo": "Kokeile %s -sovellusta»",
+          "withAppDemo": "Kokeile %s-sovellusta »",
           "withoutAppDemo": "Käynnistä »"
         },
-        "explanation": "<p>Olet käynnistämässä NordSuiten demoa. Saat käyttöösi palvelun yhden tunnin ajaksi. Jos kiinnostut palvelusta ja haluat ottaa sen pidemmäksi ajaksi kokeiluun, ole yhteydessä NordSuiten asiakaspalveluun.</a></p>",
+        "explanation": "<p>Olet ottamassa käyttöön NordSuiten demoversiota. Saat palvelun käyttöösi yhden tunnin ajaksi. Jos kiinnostut palvelusta ja haluat ottaa sen käyttöön, ole yhteydessä NordSuiten asiakaspalveluun.</p>",
         "securityOverview": "<p>NordSuite perustuu avoimen lähdekoodin ohjelmistoon <a href=\"https://sandstorm.io\">Sandstorm</a>. Jos tietoturva kiinnostaa sinua, katso <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">Sandstormin tietoturvamallin yleiskatsaus</a>.</p>"
       }
     },
@@ -52,7 +52,7 @@
     "signup": {
       "title": "Lunasta kutsu",
       "signedUp": {
-        "keyIsUsedWithOrigin": "Olet täysin rekisteröitynyt!  Nyt mene <a href=\"https://apps.sandstorm.io/?host=%s\">asentamaan joitakin ohjelmia</a>.",
+        "keyIsUsedWithOrigin": "Olet täysin rekisteröitynyt!  Nyt mene <a href=\"https://nordsuite.fi/appstore?host=%s\">asentamaan joitakin ohjelmia</a>.",
         "keyIsNotUsed": "Näyttää siltä että sinulla on jo tili, joten et tarvitse rekisteröitymisavainta."
       },
       "keyIsUsed": "Sori, tämä rekisteröitymisavain on jo käytetty.",
@@ -406,7 +406,7 @@
       }
     },
     "identityChangesNotificationItem": {
-      "explanation": "Olemme vaihtamassa tapaa miten identiteetit toimivat Nordsuitessa. Tämä voi vaikuttaa tiliisi. Klikkaa tästä saadaksesi lisätietoja."
+      "explanation": "Olemme vaihtamassa tapaa miten identiteetit toimivat NordSuitessa. Tämä voi vaikuttaa tiliisi. Klikkaa tästä saadaksesi lisätietoja."
     },
     "grainActivityNotificationItem": {
       "title": "<strong>__sender__</strong> jyvältä <strong>__grain__</strong>:",
@@ -1079,7 +1079,7 @@
     },
     "systemStatus": {
       "name": "Järjestestelmä loki",
-      "subtext": "Mäytä Sandstormin debuggaus loki.",
+      "subtext": "Näytä Nordsuiten debuggaus loki.",
       "newAdminLogContents": {
         "ellipsis": "..."
       },
@@ -1109,7 +1109,7 @@
       "newAdminStats": {
         "share": {
           "title": "Jaa anonyymisti Sandstorm ohjelmointi tiimille",
-          "explanation": "Haluaisimme tietää kuinkan monta Sandstorm käyttäjää on olemassa, tehdäksemme kaavioita jne.  Onko OK lähettää tämän sivun numerot kerran päivässä Sandstorm tiimille, jotta voimme lisätä ne kokonaismääriin?  Kaikki tilastot ovat anonyymejä.",
+          "explanation": "Haluaisimme tietää kuinkan monta Sandstorm-käyttäjää on olemassa, tehdäksemme kaavioita jne.  Onko OK lähettää tämän sivun numerot kerran päivässä Sandstorm tiimille, jotta voimme lisätä ne kokonaismääriin?  Kaikki tilastot ovat anonyymejä.",
           "enableButton": "Lähetä anonyymejä tilastoja",
           "disableButton": "Älä lähetä",
           "control": {
@@ -1239,7 +1239,7 @@
       "uninstall": "Poista ohjelma",
       "noMatchApp": "Et ole asentanut tämän nimistä ohjelmaa. Kokeile <a href=\"__url__\">etsiä ohjelmakaupasta &raquo;</a>",
       "unauthorized": "Ei pääsyä! :(",
-      "unauthorizedText": "Tämä on yksityinen Sandstorm palvelin. Asentaaksesi ohjelmia, adminin täytyy kutsua sinut. Admin voi kutsua sinut hallintapaneelista.",
+      "unauthorizedText": "Pääsy palveluun on rajoitettu. Asentaaksesi ohjelmia, tulee sinulla olla asiakastili.",
       "intro": "<strong>Tervetuloa!</strong><br>Luo asiakirjoja, chatti huoneita, blogeja, ja enemmän.<br><br>Aloita asentamalla ohjelma.",
       "doneButton": "Selvä"
     },
@@ -1614,10 +1614,10 @@
       "permissionDenied": "Et voi katsoa järjestelmän lokeja koska et ole kirjoautunut adminina ja sinulla ei ole asennus kirjautumiskoodia."
     },
     "setupWizardIntro": {
-      "title": "Tervetuloa Sandstormiin!",
+      "title": "Tervetuloa Nordsuiteen!",
       "revisitWizardLink": "Tee ohjattu asennus uudelleen",
       "noIdpEnabled": {
-        "explanation": "Tämä Sandstorm palvelin on asennettu aiemmin, mutta koska on tapahtunut muutoksia <code>sandstorm.conf</code> tiedostossa, sinun täytyy määrittää kirjautumistavat uudelleen."
+        "explanation": "Tämä Nordsuite-palvelin on asennettu aiemmin, mutta koska on tapahtunut muutoksia <code>sandstorm.conf</code> tiedostossa, sinun täytyy määrittää kirjautumistavat uudelleen."
       },
       "idpEnabled": {
         "explanation": "Tämä Sandstorm palvelin on valmis toimintaan. Voit muokata palvelimen asetuksia, mukaanlukien kirjautumistapoja ja miten Sandstorm lähettää sähköpostia.",
@@ -1636,7 +1636,7 @@
     },
     "setupWizardIdentity": {
       "title": "Kirjautumistavat",
-      "explanation1": "Käyttääksesi Sandstormia, sinun täytyy luoda käyttäjätili.  Jokaisen käyttäjätilin takana Sandstormissa on kirjautumistapa.  Käytät tätä kirjautumistapaa tullaksesi ensimmäiseksi tämän Sandstorm asennuksen adminiksi.",
+      "explanation1": "Käyttääksesi NordSuitea, täytyy sinun luoda käyttäjätili. Jokaisella käyttäjätilillä on kirjautumistapoja. Käytät tätä kirjautumistapaa tullaksesi ensimmäiseksi tämän Sandstorm asennuksen adminiksi.",
       "explanation2": "Määritä kirjautumistapa tai tavat jotka haluat ottaa käyttöön.",
       "nextButton": "Seuraava",
       "backButton": "edellinen"
@@ -1763,14 +1763,14 @@
   },
   "packages": {
     "topbar": {
-      "updated": "Sandstorm on päivitetty — Klikkaa tästä ladataksesi sivun uudelleen",
+      "updated": "NordSuite on päivitetty — Klikkaa tästä ladataksesi sivun uudelleen",
       "apps": "Ohjelmat",
       "grains": "Jyvät",
-      "oasis": "Ota ohjelmisto käyttöösi yrityksellesi:",
-      "createAccount": "Ota kokeiluun (3kk) »",
-      "demoHint": "Saat Peruspalvelun käyttöön yrityksellesi 3 kuukaudeksi täysin ilmaiseksi. Koskee ensimmäistä 50 yritysasiakasta.",
-      "selfHostHint": "Onko sinulla kysymyksiä?",
-      "contactSupport": "Live Chat »"
+      "oasis": "Ota ohjelmisto käyttöön yrityksellesi:",
+      "createAccount": "Ota käyttöön »",
+      "demoHint": "Saat palvelun ensimmäiseksi vuodeksi -50% alennuksella. Tarjous voimassa 31.3.2018 asti.",
+      "selfHostHint": "Onko sinulla kysyttävää?",
+      "contactSupport":"Live Chat",
       "signUp": "Kirjaudu käyttämällä:",
       "close": "Sulje"
     },

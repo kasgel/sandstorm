@@ -21,5 +21,6 @@ isSafeDemoAppUrl = function isSafeDemoAppUrl(url) {
       url.lastIndexOf("http://sandstorm.io/", 0) === 0 ||
       url.lastIndexOf("https://sandstorm.io/", 0) === 0 ||
       url.lastIndexOf("https://alpha-j7uny7u376jnimcsx34c.sandstorm.io/", 0) === 0 ||
+      url.lastIndexOf("https://appstore-api.nordsuite.fi", 0) === 0 ||
       url.lastIndexOf("https://app-index.sandstorm.io/", 0) === 0;
 };
