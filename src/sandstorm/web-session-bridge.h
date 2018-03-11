@@ -37,17 +37,26 @@ public:
 
     const kj::HttpHeaderTable& headerTable;
 
+    kj::HttpHeaderId hAccessControlAllowHeaders;
+    kj::HttpHeaderId hAccessControlAllowMethods;
+    kj::HttpHeaderId hAccessControlAllowOrigin;
     kj::HttpHeaderId hAccessControlExposeHeaders;
+    kj::HttpHeaderId hAccessControlMaxAge;
+    kj::HttpHeaderId hAccessControlRequestHeaders;
+    kj::HttpHeaderId hAccessControlRequestMethod;
     kj::HttpHeaderId hAccept;
     kj::HttpHeaderId hAcceptEncoding;
     kj::HttpHeaderId hContentDisposition;
     kj::HttpHeaderId hContentEncoding;
     kj::HttpHeaderId hContentLanguage;
+    kj::HttpHeaderId hContentSecurityPolicy;
     kj::HttpHeaderId hCookie;
     kj::HttpHeaderId hETag;
     kj::HttpHeaderId hIfMatch;
     kj::HttpHeaderId hIfNoneMatch;
     kj::HttpHeaderId hSecWebSocketProtocol;
+    kj::HttpHeaderId hVary;
+    kj::HttpHeaderId hXFrameOptions;
 
     kj::HttpHeaderId hDav;
     kj::HttpHeaderId hDepth;
@@ -68,28 +77,52 @@ public:
 
     bool isHttps = false;
     // Will we be serving over HTTPS?
+
+    bool isApi = false;
+    // If true, set Access-Control-Allow-Origin and the like as appropriate for an API endpoint.
   };
 
-  WebSessionBridge(WebSession::Client session, kj::Maybe<Handle::Client> loadingIndicator,
+  WebSessionBridge(kj::Timer& timer, WebSession::Client session,
+                   kj::Maybe<Handle::Client> loadingIndicator,
                    const Tables& tables, Options options);
+
+  void restrictParentFrame(kj::StringPtr parent, kj::StringPtr self);
+  // Return headers that prevents any origin except the designated one from framing us.
 
   kj::Promise<void> request(
       kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
       kj::AsyncInputStream& requestBody, Response& response) override;
 
-  kj::Promise<void> openWebSocket(
-      kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) override;
+  struct StreamAborterPair {
+    ByteStream::Client stream;
 
-  static ByteStream::Client makeHttpResponseStream(
+    kj::Own<void> aborter;
+    // Drop this ref to disconnect the stream (if it still exists) from the underlying HTTP
+    // request/response. This is necessary to prevent dangling references if the stream cap is
+    // still held when the HTTP request ends (or is canceled).
+  };
+
+  static StreamAborterPair makeHttpResponseStream(
       uint statusCode, kj::StringPtr statusText,
       kj::HttpHeaders&& headers,
       kj::HttpService::Response& response);
 
+  static void addStandardApiOptions(
+      const Tables& tables, const kj::HttpHeaders& reqHeaders, kj::HttpHeaders& respHeaders);
+  // Add standard headers to the response for an OPTIONS request to an API host.
+
 private:
+  kj::Timer& timer;
   WebSession::Client session;
   kj::Maybe<Handle::Client> loadingIndicator;
   const Tables& tables;
   Options options;
+
+  struct FrameRestriction {
+    kj::String parent;
+    kj::String self;
+  };
+  kj::Maybe<FrameRestriction> frameRestriction;
 
   template <typename T>
   inline HttpStatusDescriptor::Reader lookupStatus(
@@ -99,12 +132,17 @@ private:
   kj::Promise<void> sendError(kj::HttpService::Response& response,
                               uint statusCode, kj::StringPtr statusText);
 
+  void addStandardOptions(const kj::HttpHeaders& reqHeaders, kj::HttpHeaders& respHeaders);
+
   kj::String davDestination(const kj::HttpHeaders& headers);
   bool davNoOverwrite(const kj::HttpHeaders& headers);
   bool davShallow(const kj::HttpHeaders& headers);
   WebSession::PropfindDepth davPropfindDepth(const kj::HttpHeaders& headers);
   kj::Promise<kj::Maybe<kj::String>> davXmlContent(
       const kj::HttpHeaders& headers, kj::AsyncInputStream& body, Response& response);
+
+  kj::Promise<void> openWebSocket(
+      kj::StringPtr url, const kj::HttpHeaders& headers, Response& response);
 
   struct ContextInitInfo {
     kj::Own<kj::PromiseFulfiller<ByteStream::Client>> streamer;

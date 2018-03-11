@@ -40,8 +40,15 @@ if (Meteor.isClient) {
 
     if (navigator.languages) {
       navigator.languages.forEach(lang => {
-        if (!bestLang && (lang in langMap)) {
-          bestLang = lang;
+        if (!bestLang) {
+          if (lang in langMap) {
+            bestLang = lang;
+          } else if (lang.indexOf('-') > 0) {
+            var prefix = lang.split('-')[0];
+            if (prefix in langMap) {
+              bestLang = prefix;
+            }
+          }
         }
       });
     } else {
@@ -215,10 +222,11 @@ const showBillingPrompt = function (reason, next) {
     db: globalDb,
     topbar: globalTopbar,
     accountsUi: globalAccountsUi,
-    billingPromptTemplate: window.BlackrockPayments ? "billingPrompt" : "billingPromptLocal",
+    billingPromptTemplate: Meteor.settings.public.stripePublicKey
+                              ? "billingPrompt" : "billingPromptLocal",
     onComplete: function () {
       billingPromptState.set(null);
-      if (!window.BlackrockPayments) {
+      if (!Meteor.settings.public.stripePublicKey) {
         Meteor.call("updateQuota", function (err) {
           if (err) {
             console.error(err);
@@ -250,7 +258,7 @@ const ifQuotaAvailable = function (next) {
 
 const ifPlanAllowsCustomApps = function (next) {
   if (globalDb.isDemoUser() || globalDb.isUninvitedFreeUser()) {
-    if (window.BlackrockPayments) {
+    if (Meteor.settings.public.stripePublicKey) {
       showBillingPrompt("customApp", function () {
         // If the user successfully chose a plan, continue the operation.
         if (!globalDb.isDemoUser() && !globalDb.isUninvitedFreeUser()) {
@@ -681,7 +689,7 @@ Template.root.helpers({
   },
 
   overQuota: function () {
-    return !window.BlackrockPayments && isUserOverQuota(Meteor.user());
+    return !Meteor.settings.public.stripePublicKey && isUserOverQuota(Meteor.user());
   },
 });
 

@@ -35,21 +35,51 @@ static HttpStatusDescriptor::Reader getHttpStatusAnnotation(
                  enumerant.getProto().getName());
 }
 
+static kj::Promise<void> pingEveryMinute(kj::Timer& timer, Handle::Client handle) {
+  return timer.afterDelay(1 * kj::MINUTES).then([&timer, KJ_MVCAP(handle)]() mutable {
+    auto promise = handle.pingRequest().send().then([](auto) {
+      // Apparently the server actually implements ping(). Neat. Nothing to do here, though.
+    }, [](kj::Exception&& e) {
+      // ping() threw. This may be expected, depending on the exception type.
+      if (e.getType() == kj::Exception::Type::DISCONNECTED) {
+        // Capability is disconnected. Rethrow the exception to terminate the loop.
+        kj::throwFatalException(kj::mv(e));
+      } else {
+        // Any other exception is interpreted as indicating that the capability is still connected.
+        // We could specifically look for UNIMPLEMENTED exceptions, but some very old apps were
+        // built before the UNIMPLEMENTED exception type was added to Cap'n Proto.
+      }
+    });
+    return promise.then([&timer, KJ_MVCAP(handle)]() mutable {
+      return pingEveryMinute(timer, kj::mv(handle));
+    });
+  });
+}
+
 static inline ByteStream::Client newNoStreamingByteStream();
 
 WebSessionBridge::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilder)
     : headerTable(headerTableBuilder.getFutureTable()),
+      hAccessControlAllowHeaders(headerTableBuilder.add("Access-Control-Allow-Headers")),
+      hAccessControlAllowMethods(headerTableBuilder.add("Access-Control-Allow-Methods")),
+      hAccessControlAllowOrigin(headerTableBuilder.add("Access-Control-Allow-Origin")),
       hAccessControlExposeHeaders(headerTableBuilder.add("Access-Control-Expose-Headers")),
+      hAccessControlMaxAge(headerTableBuilder.add("Access-Control-Max-Age")),
+      hAccessControlRequestHeaders(headerTableBuilder.add("Access-Control-Request-Headers")),
+      hAccessControlRequestMethod(headerTableBuilder.add("Access-Control-Request-Method")),
       hAccept(headerTableBuilder.add("Accept")),
       hAcceptEncoding(headerTableBuilder.add("Accept-Encoding")),
       hContentDisposition(headerTableBuilder.add("Content-Disposition")),
       hContentEncoding(headerTableBuilder.add("Content-Encoding")),
       hContentLanguage(headerTableBuilder.add("Content-Language")),
+      hContentSecurityPolicy(headerTableBuilder.add("Content-Security-Policy")),
       hCookie(headerTableBuilder.add("Cookie")),
       hETag(headerTableBuilder.add("ETag")),
       hIfMatch(headerTableBuilder.add("If-Match")),
       hIfNoneMatch(headerTableBuilder.add("If-None-Match")),
       hSecWebSocketProtocol(headerTableBuilder.add("Sec-WebSocket-Protocol")),
+      hVary(headerTableBuilder.add("Vary")),
+      hXFrameOptions(headerTableBuilder.add("X-Frame-Options")),
 
       hDav(headerTableBuilder.add("DAV")),
       hDepth(headerTableBuilder.add("Depth")),
@@ -69,16 +99,31 @@ WebSessionBridge::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilde
       responseHeaderWhitelist(*WebSession::Response::HEADER_WHITELIST) {}
 
 WebSessionBridge::WebSessionBridge(
-    WebSession::Client session, kj::Maybe<Handle::Client> loadingIndicator,
+    kj::Timer& timer, WebSession::Client session, kj::Maybe<Handle::Client> loadingIndicator,
     const Tables& tables, Options options)
-    : session(kj::mv(session)),
+    : timer(timer),
+      session(kj::mv(session)),
       loadingIndicator(kj::mv(loadingIndicator)),
       tables(tables),
       options(options) {}
 
+void WebSessionBridge::restrictParentFrame(kj::StringPtr parent, kj::StringPtr self) {
+  KJ_REQUIRE(!options.isApi, "can't apply frame restriction to API endpoint");
+  KJ_IF_MAYBE(fr, frameRestriction) {
+    KJ_REQUIRE(parent == fr->parent, "frame restriction on UI session changed");
+    KJ_REQUIRE(self == fr->self, "frame restriction on UI session changed");
+  } else {
+    frameRestriction = FrameRestriction { kj::str(parent), kj::str(self) };
+  }
+}
+
 kj::Promise<void> WebSessionBridge::request(
     kj::HttpMethod method, kj::StringPtr path, const kj::HttpHeaders& headers,
     kj::AsyncInputStream& requestBody, Response& response) {
+  if (method == kj::HttpMethod::GET && headers.isWebSocket()) {
+    return openWebSocket(path, headers, response);
+  }
+
   KJ_REQUIRE(path.startsWith("/"));
   path = path.slice(1);
 
@@ -95,19 +140,23 @@ kj::Promise<void> WebSessionBridge::request(
     }
 
     case kj::HttpMethod::POST: {
+      auto doNonStreaming = [this,method,path,&headers,&requestBody,&response]() {
+        return requestBody.readAllBytes()
+            .then([this,path,&headers,&response]
+                  (kj::Array<byte>&& data) mutable {
+          auto req = session.postRequest();
+          req.setPath(path);
+          auto content = req.initContent();
+          content.setContent(data);
+          initContent(content, headers);
+          auto streamer = initContext(req.initContext(), headers);
+          return handleResponse(req.send(), kj::mv(streamer), response);
+        });
+      };
+
       KJ_IF_MAYBE(length, requestBody.tryGetLength()) {
         if (*length < MAX_NONSTREAMING_LENGTH) {
-          return requestBody.readAllBytes()
-              .then([this,path,&headers,&response]
-                    (kj::Array<byte>&& data) mutable {
-            auto req = session.postRequest();
-            req.setPath(path);
-            auto content = req.initContent();
-            content.setContent(data);
-            initContent(content, headers);
-            auto streamer = initContext(req.initContext(), headers);
-            return handleResponse(req.send(), kj::mv(streamer), response);
-          });
+          return doNonStreaming();
         }
       }
 
@@ -116,24 +165,47 @@ kj::Promise<void> WebSessionBridge::request(
       req.setPath(path);
       initContent(req, headers);
       auto streamer = initContext(req.initContext(), headers);
-      return handleStreamingRequestResponse(
-          req.send().getStream(), requestBody, kj::mv(streamer), response);
+
+      // TODO(apibump): Currently we can't pipeline on the stream because we have to handle the
+      //   case of old apps which don't support streaming. That fallback should move into the
+      //   compat layer, then we can avoid the round-trip here.
+      return req.send()
+          .then([this,&headers,&requestBody,&response,KJ_MVCAP(streamer)]
+                (capnp::Response<WebSession::PostStreamingResults> result) mutable {
+        return handleStreamingRequestResponse(
+            result.getStream(), requestBody, kj::mv(streamer), response);
+      }, [this,KJ_MVCAP(doNonStreaming)](kj::Exception&& e) -> kj::Promise<void> {
+        // Unfortunately, some apps are so old that they don't know about UNIMPLEMENTED exceptions,
+        // so we have to check the description.
+        if (e.getType() == kj::Exception::Type::UNIMPLEMENTED ||
+            (e.getType() == kj::Exception::Type::FAILED &&
+             strstr(e.getDescription().cStr(), "not implemented") != nullptr)) {
+          // OK, fine. Fall back to non-streaming.
+          return doNonStreaming();
+        }
+
+        return kj::mv(e);
+      });
     }
 
     case kj::HttpMethod::PUT: {
+      auto doNonStreaming = [this,method,path,&headers,&requestBody,&response]() {
+        return requestBody.readAllBytes()
+            .then([this,path,&headers,&response]
+                  (kj::Array<byte>&& data) mutable {
+          auto req = session.putRequest();
+          req.setPath(path);
+          auto content = req.initContent();
+          content.setContent(data);
+          initContent(content, headers);
+          auto streamer = initContext(req.initContext(), headers);
+          return handleResponse(req.send(), kj::mv(streamer), response);
+        });
+      };
+
       KJ_IF_MAYBE(length, requestBody.tryGetLength()) {
         if (*length < MAX_NONSTREAMING_LENGTH) {
-          return requestBody.readAllBytes()
-              .then([this,path,&headers,&response]
-                    (kj::Array<byte>&& data) mutable {
-            auto req = session.putRequest();
-            req.setPath(path);
-            auto content = req.initContent();
-            content.setContent(data);
-            initContent(content, headers);
-            auto streamer = initContext(req.initContext(), headers);
-            return handleResponse(req.send(), kj::mv(streamer), response);
-          });
+          return doNonStreaming();
         }
       }
 
@@ -142,8 +214,27 @@ kj::Promise<void> WebSessionBridge::request(
       req.setPath(path);
       initContent(req, headers);
       auto streamer = initContext(req.initContext(), headers);
-      return handleStreamingRequestResponse(
-          req.send().getStream(), requestBody, kj::mv(streamer), response);
+
+      // TODO(apibump): Currently we can't pipeline on the stream because we have to handle the
+      //   case of old apps which don't support streaming. That fallback should move into the
+      //   compat layer, then we can avoid the round-trip here.
+      return req.send()
+          .then([this,&headers,&requestBody,&response,KJ_MVCAP(streamer)]
+                (capnp::Response<WebSession::PutStreamingResults> result) mutable {
+        return handleStreamingRequestResponse(
+            result.getStream(), requestBody, kj::mv(streamer), response);
+      }, [this,KJ_MVCAP(doNonStreaming)](kj::Exception&& e) -> kj::Promise<void> {
+        // Unfortunately, some apps are so old that they don't know about UNIMPLEMENTED exceptions,
+        // so we have to check the description.
+        if (e.getType() == kj::Exception::Type::UNIMPLEMENTED ||
+            (e.getType() == kj::Exception::Type::FAILED &&
+             strstr(e.getDescription().cStr(), "not implemented") != nullptr)) {
+          // OK, fine. Fall back to non-streaming.
+          return doNonStreaming();
+        }
+
+        return kj::mv(e);
+      });
     }
 
     case kj::HttpMethod::DELETE: {
@@ -291,7 +382,7 @@ kj::Promise<void> WebSessionBridge::request(
       // TODO(cleanup): Refactor initContext() so that we can avoid creating a stream here.
       streamer.streamer->fulfill(newNoStreamingByteStream());
       return req.send()
-          .then([this,&response](capnp::Response<WebSession::Options> options) mutable {
+          .then([this,&headers,&response](capnp::Response<WebSession::Options> options) mutable {
         kj::HttpHeaders respHeaders(tables.headerTable);
         kj::Vector<kj::StringPtr> dav;
         if (options.getDavClass1()) dav.add("1");
@@ -307,11 +398,14 @@ kj::Promise<void> WebSessionBridge::request(
           respHeaders.set(tables.hAccessControlExposeHeaders, "DAV");
         }
 
+        if (this->options.isApi) addStandardApiOptions(tables, headers, respHeaders);
+
         response.send(200, "OK", respHeaders, uint64_t(0));
-      }, [this,&response](kj::Exception&& e) {
+      }, [this,&headers,&response](kj::Exception&& e) {
         if (e.getType() == kj::Exception::Type::UNIMPLEMENTED) {
           // Nothing to say.
           kj::HttpHeaders respHeaders(tables.headerTable);
+          if (options.isApi) addStandardApiOptions(tables, headers, respHeaders);
           response.send(200, "OK", respHeaders, uint64_t(0));
         } else {
           kj::throwRecoverableException(kj::mv(e));
@@ -321,6 +415,25 @@ kj::Promise<void> WebSessionBridge::request(
 
     default:
       return response.sendError(501, "Not Implemented", tables.headerTable);
+  }
+}
+
+void WebSessionBridge::addStandardApiOptions(
+    const Tables& tables, const kj::HttpHeaders& reqHeaders, kj::HttpHeaders& respHeaders) {
+  // Try to convince browsers that it's really totally OK to send cross-origin requests to API
+  // endpoints.
+  respHeaders.set(tables.hAccessControlAllowOrigin, "*");
+  respHeaders.set(tables.hAccessControlMaxAge, "3600");
+
+  KJ_IF_MAYBE(h, reqHeaders.get(tables.hAccessControlRequestHeaders)) {
+    respHeaders.set(tables.hAccessControlAllowHeaders, *h);
+  }
+
+  constexpr kj::StringPtr standardMethods = "GET, HEAD, POST, PUT, PATCH, DELETE"_kj;
+  KJ_IF_MAYBE(m, reqHeaders.get(tables.hAccessControlRequestMethod)) {
+    respHeaders.set(tables.hAccessControlAllowMethods, kj::str(standardMethods, ", ", *m));
+  } else {
+    respHeaders.set(tables.hAccessControlAllowMethods, standardMethods);
   }
 }
 
@@ -532,7 +645,7 @@ public:
   kj::Promise<void> fulfillRead(kj::ArrayPtr<const byte> data) {
     KJ_SWITCH_ONEOF(current) {
       KJ_CASE_ONEOF(w, CurrentWrite) {
-        KJ_FAIL_REQUIRE("can only call write() once at a time");
+        KJ_FAIL_REQUIRE("can only call fulfillRead() once at a time");
       }
       KJ_CASE_ONEOF(r, CurrentRead) {
         if (data.size() < r.minBytes) {
@@ -570,6 +683,24 @@ public:
     KJ_UNREACHABLE;
   }
 
+  void fulfillReadEof() {
+    KJ_SWITCH_ONEOF(current) {
+      KJ_CASE_ONEOF(w, CurrentWrite) {
+        KJ_LOG(ERROR, "can only call fulfillRead() once at a time");
+      }
+      KJ_CASE_ONEOF(r, CurrentRead) {
+        r.fulfiller->fulfill(kj::cp(r.alreadyRead));
+        current = Eof();
+      }
+      KJ_CASE_ONEOF(e, Eof) {
+        KJ_LOG(ERROR, "double EOF");
+      }
+      KJ_CASE_ONEOF(n, None) {
+        current = Eof();
+      }
+    }
+  }
+
 private:
   // Outgoing direction.
   static constexpr size_t MAX_IN_FLIGHT = 65536;
@@ -598,6 +729,12 @@ private:
   class WebSocketStreamImpl final: public WebSession::WebSocketStream::Server {
   public:
     WebSocketStreamImpl(kj::Own<WebSocketPipe> pipe): pipe(kj::mv(pipe)) {}
+
+    ~WebSocketStreamImpl() noexcept(false) {
+      // Note that we know that `queue` is empty because Cap'n Proto wouldn't drop the cap if the
+      // sendBytes() method were still executing.
+      pipe->fulfillReadEof();
+    }
 
   protected:
     kj::Promise<void> sendBytes(SendBytesContext context) override {
@@ -644,7 +781,7 @@ static inline ByteStream::Client newNoStreamingByteStream() {
 }
 
 kj::Promise<void> WebSessionBridge::openWebSocket(
-    kj::StringPtr path, const kj::HttpHeaders& headers, WebSocketResponse& response) {
+    kj::StringPtr path, const kj::HttpHeaders& headers, Response& response) {
   KJ_REQUIRE(path.startsWith("/"));
   path = path.slice(1);
 
@@ -714,12 +851,20 @@ public:
   }
 
   ~ByteStreamImpl() noexcept(false) {
+    KJ_IF_MAYBE(a, aborter) {
+      a->obj = nullptr;
+    }
+
     KJ_IF_MAYBE(df, doneFulfiller) {
       if (df->get()->isWaiting()) {
         df->get()->reject(KJ_EXCEPTION(FAILED,
             "app did not finish writing HTTP response stream"));
       }
     }
+  }
+
+  kj::Own<void> makeAborter() {
+    return kj::heap<Aborter>(*this);
   }
 
   kj::Promise<void> whenDone() {
@@ -769,9 +914,26 @@ private:
 
   struct Done {};
 
+  class Aborter: public kj::Refcounted {
+  public:
+    Aborter(ByteStreamImpl& obj): obj(obj) {
+      KJ_REQUIRE(obj.aborter == nullptr);
+      obj.aborter = *this;
+    }
+    ~Aborter() noexcept(false) {
+      KJ_IF_MAYBE(o, obj) {
+        o->aborter = nullptr;
+        o->abort();
+      }
+    }
+
+    kj::Maybe<ByteStreamImpl&> obj;
+  };
+
   kj::OneOf<NotStarted, Started, Done> state;
   kj::Maybe<kj::Own<kj::PromiseFulfiller<void>>> doneFulfiller;
   kj::Promise<void> queue = kj::READY_NOW;
+  kj::Maybe<Aborter&> aborter;
 
   kj::AsyncOutputStream& ensureStarted(kj::Maybe<uint64_t> size) {
     if (state.is<NotStarted>()) {
@@ -785,13 +947,25 @@ private:
       return *state.get<Started>().output;
     }
   }
+
+  void abort() {
+    if (!state.is<Done>()) {
+      queue = KJ_EXCEPTION(DISCONNECTED, "HTTP response aborted");
+      state.init<Done>();
+      KJ_IF_MAYBE(df, doneFulfiller) {
+        df->get()->reject(KJ_EXCEPTION(FAILED, "ByteStreamImpl aborted"));
+      }
+    }
+  }
 };
 
-ByteStream::Client WebSessionBridge::makeHttpResponseStream(
+WebSessionBridge::StreamAborterPair WebSessionBridge::makeHttpResponseStream(
     uint statusCode, kj::StringPtr statusText,
     kj::HttpHeaders&& headers,
     kj::HttpService::Response& response) {
-  return kj::heap<ByteStreamImpl>(statusCode, statusText, kj::mv(headers), response);
+  auto result = kj::heap<ByteStreamImpl>(statusCode, statusText, kj::mv(headers), response);
+  auto aborter = result->makeAborter();
+  return { kj::mv(result), kj::mv(aborter) };
 }
 
 template <typename T>
@@ -1078,11 +1252,40 @@ kj::Promise<void> WebSessionBridge::handleResponse(
       }
     }
 
-    for (auto addlHeader: in.getAdditionalHeaders()) {
+    KJ_IF_MAYBE(fr, frameRestriction) {
+      KJ_ASSERT(!options.isApi);
+      headers.set(tables.hContentSecurityPolicy,
+          kj::str("frame-ancestors ", fr->parent, " ", fr->self));
+      headers.set(tables.hXFrameOptions, kj::str("ALLOW-FROM ", fr->parent));
+    }
+
+    auto addlHeaders = in.getAdditionalHeaders();
+    kj::Vector<kj::StringPtr> exposedHeaders(addlHeaders.size() + 1);
+    // The only non-CORS-safelisted headers that we use on responses and want to expose
+    // cross-origin are ETag and app-specific whitelisted headers.
+    exposedHeaders.add("ETag");
+    for (auto addlHeader: addlHeaders) {
       auto name = addlHeader.getName();
       if (tables.responseHeaderWhitelist.matches(name)) {
         headers.add(name, addlHeader.getValue());
+        exposedHeaders.add(name);
       }
+    }
+
+    if (options.isApi) {
+      // We need to make sure caches know that different bearer tokens get totally different
+      // results.
+      headers.set(tables.hVary, "Authorization");
+
+      // APIs can be called from any origin. Because we ignore cookies, there is no security
+      // problem.
+      headers.set(tables.hAccessControlAllowOrigin, "*");
+
+      // Add a Content-Security-Policy as a backup in case someone finds a way to load this
+      // resource in a browser context. This policy should thoroughly neuter it.
+      headers.set(tables.hContentSecurityPolicy, "default-src 'none'; sandbox");
+
+      headers.set(tables.hAccessControlExposeHeaders, kj::strArray(exposedHeaders, ", "));
     }
 
     // If we complete this function without calling fulfill() to connect the stream, then this is
@@ -1135,9 +1338,11 @@ kj::Promise<void> WebSessionBridge::handleResponse(
             auto handle = body.getStream();
             auto outStream = kj::heap<ByteStreamImpl>(
                 status.getId(), status.getTitle(), headers.clone(), out);
+            auto aborter = outStream->makeAborter();
             auto promise = outStream->whenDone();
             contextInitInfo.streamer->fulfill(kj::mv(outStream));
-            return promise.attach(kj::mv(handle));
+            return promise.exclusiveJoin(pingEveryMinute(timer, kj::mv(handle)))
+                .attach(kj::mv(aborter));
           }
         }
 
