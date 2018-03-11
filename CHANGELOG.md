@@ -1,3 +1,26 @@
+### v0.230 (2018-03-10) [bugfixes]
+- Fixed language detection no longer working.
+- Fixed bug preventing Thunderbird from syncing from Radicale, and prevented older versions of the Mercurial client from pushing to Mercurial.
+- Fixed bug where large downloads from a grain (including streaming audio from Groove Basin) would get cut off after 90-180 seconds if the user wasn't otherwise interacting with the grain.
+- Updated Meteor to 1.6.1.
+
+### v0.229 (2018-03-05) [bugfixes]
+- Fixed Rocket.Chat mobile app, which relies on the ability to authenticate WebSockets on the API endpoint by placing the authorization token in the URL.
+- Fixed broken server when `BASE_URL` overlaps with `WILDCARD_HOST`.
+
+### v0.228 (2018-03-04) [bugfixes]
+- Fixed Tiny Tiny RSS mobile app no longer being able to connect to servers.
+- Fixed problem where in mobile app configuration for various apps, after one minute the URL and password would be replaced with an error message.
+- Fixed some error log spam.
+
+### v0.227 (2018-03-03) [bugfixes]
+- Fixed obscure crash.
+- Fixed bogus error message when opening a revoked API token.
+
+### v0.226 (2018-03-03)
+- The new HTTP Gateway is now on by default. This is a major change to the lower levels of Sandstorm which should improve CPU and memory usage considerably. Learn more here: https://sandstorm.io/news/2018-02-19-http-rewrite-and-more
+- Tweaked language selection heuristic.
+
 ### v0.225 (2018-02-03)
 - The front-end HTTP proxy has been rewritten from JavaScript (in Node.js) to C++. The new code path should be faster and more memory-efficient. In this release, it is only enabled if you add `EXPERIMENTAL_GATEWAY=true` to your `/opt/sandstorm/sandstorm.conf`. In a future release, this will become the default and the old implementation will be removed. The new implementation is turned on for Sandstorm Oasis by default.
 - Improved Finnish and French translations.

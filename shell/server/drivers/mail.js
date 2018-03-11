@@ -52,6 +52,24 @@ if (!Meteor.settings.replicaNumber) {  // only first replica
   });
 }
 
+if (process.env.HTTP_GATEWAY === "local" &&
+    !global.sandstormListenCapabilityStream) {
+  // TODO(cleanup): This is supposed to come from meteor-bundle-main.js but that doesn't actually
+  //   run in dev-mode servers.
+  var Pipe = process.binding('pipe_wrap').Pipe;
+
+  global.sandstormListenCapabilityStream = function (fd, cb) {
+    var pipe = new Pipe(true);
+    pipe.open(fd);
+    pipe.onread = function (size, buf, handle) {
+      if (handle) {
+        cb(new net.Socket({ handle: handle }));
+      }
+    };
+    pipe.readStart();
+  }
+}
+
 Meteor.startup(function () {
   const server = new SMTPServer({
     banner: "Sandstorm Mail Server",
@@ -107,7 +125,7 @@ Meteor.startup(function () {
             cc: mail.cc || [],
             bcc: mail.bcc || [],
             replyTo: (mail.replyTo && mail.replyTo[0]) || {},
-            messageId: mail.headers["message-id"] || Meteor.uuid() + "@" + HOSTNAME,
+            messageId: mail.headers["message-id"] || Random.id() + "@" + HOSTNAME,
             references: mail.references || [],
             inReplyTo: mail.inReplyTo || [],
             subject: mail.subject || "",
@@ -189,7 +207,7 @@ Meteor.startup(function () {
     },
   });
 
-  if (process.env.EXPERIMENTAL_GATEWAY === "local") {
+  if (process.env.HTTP_GATEWAY === "local") {
     // Gateway running locally, connecting over unix socketpair via SCM_RIGHTS transfer.
     global.sandstormListenCapabilityStream(
         parseInt(process.env.SANDSTORM_SMTP_LISTEN_HANDLE), socket => {
