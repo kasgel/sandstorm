@@ -1,6 +1,6 @@
-const DEFAULT_APP_MARKET_URL = "https://apps.sandstorm.io";
+const DEFAULT_APP_MARKET_URL = "https://nordsuite.fi/appstore";
 const DEFAULT_APP_UPDATES_ENABLED = true;
-const DEFAULT_APP_INDEX_URL = "https://app-index.sandstorm.io";
+const DEFAULT_APP_INDEX_URL = "https://appstore-api.nordsuite.fi";
 
 Template.newAdminAppSources.onCreated(function () {
   this.appMarketUrl = new ReactiveVar(globalDb.getSettingWithFallback("appMarketUrl", ""));

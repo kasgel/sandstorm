@@ -192,7 +192,7 @@ Template.sandstormAppListPage.events({
   "click .install-button": function (event) {
     event.preventDefault();
     event.stopPropagation();
-    window.open("https://apps.sandstorm.io/?host=" +
+    window.open("https://nordsuite.fi/appstore?host=" +
         document.location.protocol + "//" + document.location.host, "_blank");
   },
 

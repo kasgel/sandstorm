@@ -1771,6 +1771,7 @@
       "createAccount": "Créer un compte gratuit »",
       "demoHint": "Les données de votre compte d'essai seront transférées.",
       "selfHostHint": "Ou installez Sandstorm pour votre équipe (c'est un logiciel libre) :",
+      "contactSupport":"Live Chat",
       "signUp": "Inscrivez-vous :",
       "close": "Fermer"
     },

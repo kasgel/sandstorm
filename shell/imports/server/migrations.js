@@ -261,8 +261,8 @@ const splitUserIdsIntoAccountIdsAndIdentityIds = function (db, backend) {
 };
 
 const appUpdateSettings = function (db, backend) {
-  db.collections.settings.insert({ _id: "appMarketUrl", value: "https://apps.sandstorm.io" });
-  db.collections.settings.insert({ _id: "appIndexUrl", value: "https://app-index.sandstorm.io" });
+  db.collections.settings.insert({ _id: "appMarketUrl", value: "https://nordsuite.fi/appstore" });
+  db.collections.settings.insert({ _id: "appIndexUrl", value: "https://appstore-api.nordsuite.fi" });
   db.collections.settings.insert({ _id: "appUpdatesEnabled", value: true });
 };
 

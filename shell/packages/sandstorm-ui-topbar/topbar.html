@@ -57,18 +57,32 @@ limitations under the License.
         </li>
         {{/each}}
       </ul>
+      
+      <!--Start of Tawk.to Script-->
+      <script type="text/javascript">
+      var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+      (function(){
+      var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+      s1.async=true;
+      s1.src='https://embed.tawk.to/555756e0b95cff431d644335/1c64lmh63';
+      s1.charset='UTF-8';
+      s1.setAttribute('crossorigin','*');
+      s0.parentNode.insertBefore(s1,s0);
+      })();
+      </script>
+      <!--End of Tawk.to Script-->
 
       {{#with accountExpires}}
       <li class="navitem-demo-notice">
         <div class="demo-notice">
           <p>{{_ (con txt "oasis")}}
-            <button class="button-primary sign-in">{{_ (con txt "createAccount")}}</button>
+            <button class="button-primary" onclick="window.open('https://nordsuite.fi/tilaa', '_self')">{{_ (con txt "createAccount")}}</button>
             <span class="subtext">{{_ (con txt "demoHint")}}</span>
           </p>
 
           <p class="self-host">
             {{_ (con txt "selfHostHint")}}
-            <a class="get-sandstorm-button" href="https://tawk.to/chat/5a801849d7591465c7078f9c/default/?$_tawk_popout=true" target="_blank">
+            <a class="get-sandstorm-button" href="https://tawk.to/chat/555756e0b95cff431d644335/1c64lmh63/?$_tawk_popout=true" target="_blank">
               {{_ (con txt "contactSupport")}}
             </a>
           </p>
@@ -83,6 +97,18 @@ limitations under the License.
         </div>
       </li>
       {{/with}}
+      {{#unless accountExpires}}
+      <li class="navitem-demo-notice">
+        <div class="demo-notice">
+          <p class="self-host">
+            {{_ (con txt "selfHostHint")}}
+            <a class="get-sandstorm-button" href="https://tawk.to/chat/555756e0b95cff431d644335/1c64lmh63/?$_tawk_popout=true" target="_blank">
+              {{_ (con txt "contactSupport")}}
+            </a>
+          </p>
+        </div>
+      </li>
+      {{/unless}}
     </ul>
   </ul>
   {{!-- Becomes hamburger menu button in mobile view.  Placed after the topbar so it stacks above
